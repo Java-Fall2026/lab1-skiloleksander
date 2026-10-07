@@ -2,18 +2,16 @@ package ua.rental.model;
 
 import java.util.Objects;
 
+import ua.rental.util.RentalUtils;
+
 public class Branch extends ua.common.BaseEntity {
     private String name;
     private String location;
 
     public Branch(String name, String location) {
         super();
-        if (name == null || name.isEmpty()) {
-            throw new IllegalArgumentException("Branch name cannot be null or empty, got: " + name);
-        }
-        if (location == null || location.isEmpty()) {
-            throw new IllegalArgumentException("Branch location cannot be null or empty, got: " + location);
-        }
+        RentalUtils.requireNotEmpty(name, "branch name");
+        RentalUtils.requireNotEmpty(location, "location name");
         this.name = name;
         this.location = location;
     }
@@ -29,7 +27,8 @@ public class Branch extends ua.common.BaseEntity {
     @Override 
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Branch branch)) return false;
+        if (o == null || o.getClass() != this.getClass()) return false;
+        Branch branch = (Branch) o;
         return name.equals(branch.name);
     }
 

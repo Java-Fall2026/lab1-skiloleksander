@@ -11,13 +11,13 @@ class FormatHelper {
     }
 
     public static String capitalize(String str) {
-        if (str == null || str.isEmpty()) {
+        if (str == null || str.isBlank()) {
             return str;
         }
-        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+        return str.trim().substring(0, 1).toUpperCase() + str.trim().substring(1).toLowerCase();
     }
 
     public static String formatMoney(double amount) {
-        return String.format("$%.2f", amount);
+        return String.format("₴%.2f", amount);
     }
 }
