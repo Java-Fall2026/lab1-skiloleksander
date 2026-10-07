@@ -3,6 +3,8 @@ package ua.rental.model;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import ua.rental.util.RentalUtils;
+
 public class Rental extends ua.common.BaseEntity {
     private Car car;
     private Customer customer;
@@ -12,18 +14,13 @@ public class Rental extends ua.common.BaseEntity {
 
     private Rental(Car car, Customer customer, Branch branch, LocalDate startDate, LocalDate endDate) {
         super();
-        if (car == null) {
-            throw new IllegalArgumentException("Car cannot be null, got: " + car);
-        }
-        if (customer == null) {
-            throw new IllegalArgumentException("Customer cannot be null, got: " + customer);
-        }
-        if (branch == null) {
-            throw new IllegalArgumentException("Branch cannot be null, got: " + branch);
-        }
+        RentalUtils.requireNotNull(car, "car");
+        RentalUtils.requireNotNull(customer, "customer");
+        RentalUtils.requireNotNull(branch, "branch");
         if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("Start date must be before end date, got: " + startDate + " to "
-            + endDate);
+            throw new IllegalArgumentException(
+                "Both dates cannot be null or start date must be before end date, got: " + startDate + " to "
+                + endDate);
         }
         this.car = car;
         this.customer = customer;
@@ -59,7 +56,8 @@ public class Rental extends ua.common.BaseEntity {
     @Override 
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Rental rental)) return false;
+        if (o == null || o.getClass() != this.getClass()) return false;
+        Rental rental = (Rental) o;
         return car.equals(rental.car) && customer.equals(rental.customer) && branch.equals(rental.branch);
     }
 

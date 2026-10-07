@@ -1,8 +1,10 @@
 package ua.rental.model;
 
 import java.time.LocalDate;
-import java.time.Period;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+
+import ua.rental.util.RentalUtils;
 
 public class Customer extends ua.common.BaseEntity {
     private String driverLicense;
@@ -12,16 +14,9 @@ public class Customer extends ua.common.BaseEntity {
 
     public Customer(String driverLicense, String firstName, String lastName, LocalDate birthDate) {
         super();
-        if (driverLicense == null || driverLicense.isEmpty()) {
-            throw new IllegalArgumentException("Driver license cannot be null or empty, got: " + driverLicense);
-        }
-        if (firstName == null || firstName.isEmpty()) {
-            throw new IllegalArgumentException("First name cannot be null or empty, got: " + firstName);
-        }
-        if (lastName == null || lastName.isEmpty()) {
-            throw new IllegalArgumentException("Last name cannot be null or empty, got: " + lastName);
-        }
-        if (birthDate == null || Period.between(birthDate, LocalDate.now()).getYears() < 18) {
+        RentalUtils.requireNotEmpty(firstName, "first name");
+        RentalUtils.requireNotEmpty(lastName, "last name");
+        if (birthDate == null || ChronoUnit.YEARS.between(birthDate, LocalDate.now()) < 18) {
             throw new IllegalArgumentException("Birth date cannot be null or age less than 18, got: " + birthDate);
         }
         this.driverLicense = driverLicense;
@@ -49,7 +44,8 @@ public class Customer extends ua.common.BaseEntity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Customer customer)) return false;
+        if (o == null || o.getClass() != this.getClass()) return false;
+        Customer customer = (Customer) o;
         return driverLicense.equals(customer.driverLicense);
     }
 

@@ -3,6 +3,8 @@ package ua.rental.model;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import ua.rental.util.RentalUtils;
+
 public class Payment extends ua.common.BaseEntity {
     private String paymentId;
     private Rental rental;
@@ -12,12 +14,8 @@ public class Payment extends ua.common.BaseEntity {
 
     public Payment(String paymentId, Rental rental, double amount, LocalDate paymentDate, String paymentMethod) {
         super();
-        if (paymentId == null || paymentId.isEmpty()) {
-            throw new IllegalArgumentException("Payment ID cannot be null or empty, got: " + paymentId);
-        }
-        if (rental == null) {
-            throw new IllegalArgumentException("Rental cannot be null, got: " + rental);
-        }
+        RentalUtils.requireNotEmpty(paymentId, "payment id");
+        RentalUtils.requireNotNull(rental, "rental");
         if (amount <= 0) {
             throw new IllegalArgumentException("Amount must be greater than 0, got: " + amount);
         }
@@ -25,19 +23,9 @@ public class Payment extends ua.common.BaseEntity {
             throw new IllegalArgumentException("Payment date cannot be null or after the rental start date, got: "
                 + paymentDate);
         }
-        paymentMethod = paymentMethod.trim().toUpperCase();
-        String[] validMethods = {"CREDIT_CARD", "DEBIT_CARD", "CASH", "ONLINE"};
-        boolean isValidMethod = false;
-        for (String method : validMethods) {
-            if (method.equals(paymentMethod)) {
-                isValidMethod = true;
-                break;
-            }
-        }
-        if (!isValidMethod) {
-            throw new IllegalArgumentException("Valid methods are: CREDIT_CARD, DEBIT_CARD, CASH, ONLINE. Got: "
-                + paymentMethod);
-        }
+        RentalUtils.requireNotEmpty(paymentMethod, "payment method");
+        paymentMethod = RentalUtils.normalize(paymentMethod);
+        RentalUtils.validateMethod(paymentMethod);
         this.paymentId = paymentId;
         this.rental = rental;
         this.amount = amount;
@@ -67,8 +55,9 @@ public class Payment extends ua.common.BaseEntity {
 
     @Override 
     public boolean equals(Object o) {
-        if(this == o) return true;
-        if(!(o instanceof Payment payment)) return false;
+        if (this == o) return true;
+        if (o == null || o.getClass() != this.getClass()) return false;
+        Payment payment = (Payment) o;
         return paymentId.equals(payment.paymentId);
     }
 
@@ -81,7 +70,7 @@ public class Payment extends ua.common.BaseEntity {
     public String toString() {
         return "Class: " + getClass().getSimpleName() + "\npaymentId: " + paymentId + "\nrental: "
             + rental.getCar().getLicensePlate() + ", " + rental.getCustomer().getDriverLicense() + ", "
-            + rental.getBranch().getName() + "\namount: " + amount + "\npaymentDate: " + paymentDate
+            + rental.getBranch().getName() + "\namount: " + RentalUtils.formatMoney(amount) + "\npaymentDate: " + paymentDate
             + "\npaymentMethod: " + paymentMethod + "\ncreatedAt: " + createdAt;
     }
 }
