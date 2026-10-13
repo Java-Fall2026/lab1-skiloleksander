@@ -14,6 +14,7 @@ public class Customer extends ua.common.BaseEntity {
 
     public Customer(String driverLicense, String firstName, String lastName, LocalDate birthDate) {
         super();
+        RentalUtils.requireNotEmpty(driverLicense, "driver's license");
         RentalUtils.requireNotEmpty(firstName, "first name");
         RentalUtils.requireNotEmpty(lastName, "last name");
         if (birthDate == null || ChronoUnit.YEARS.between(birthDate, LocalDate.now()) < 18) {
