@@ -29,23 +29,4 @@ class ValidationHelper {
                 + " and " + max + ", got: " + number);
         }
     }
-
-    public static void requireInList(String str, String[] list, String fieldName) {
-        for (String valid : list) {
-            if (valid.equals(str)) {
-                return;
-            }
-        }
-        String listStr = "";
-        for (String el : list) {
-            if (el.equals(list[list.length - 1])) {
-                listStr += el + ".";
-            }
-            else {
-                listStr += el + ", ";
-            }
-        }
-        throw new IllegalArgumentException("Valid " + fieldName.trim().toLowerCase() + " are: " + listStr + " Got: "
-            + str);
-    }
 }

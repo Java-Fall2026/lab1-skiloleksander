@@ -4,14 +4,14 @@ import java.util.Objects;
 
 import ua.rental.util.RentalUtils;
 
-public class Car extends ua.common.BaseEntity {
+public class Car {
     private String licensePlate;
     private String model;
     private int year;
     private int mileage;
-    private String status;
+    private CarStatus status;
 
-    private Car(String licensePlate, String model, int year, int mileage, String status) {
+    private Car(String licensePlate, String model, int year, int mileage, CarStatus status) {
         super();
         RentalUtils.requireNotEmpty(licensePlate, "license plate");
         RentalUtils.requireNotEmpty(model, "model");
@@ -23,7 +23,7 @@ public class Car extends ua.common.BaseEntity {
         setStatus(status);
     }
 
-    public static Car of(String licensePlate, String model, int year, int mileage, String status) {
+    public static Car of(String licensePlate, String model, int year, int mileage, CarStatus status) {
         return new Car(licensePlate, model, year, mileage, status);
     }
 
@@ -43,7 +43,7 @@ public class Car extends ua.common.BaseEntity {
         return mileage;
     }
 
-    public String getStatus() {
+    public CarStatus getStatus() {
         return status;
     }
 
@@ -52,10 +52,8 @@ public class Car extends ua.common.BaseEntity {
         this.mileage = mileage;
     }
 
-    public final void setStatus(String status) {
-        RentalUtils.requireNotEmpty(status, "status");
-        status = RentalUtils.normalize(status);
-        RentalUtils.validateStatus(status);
+    public final void setStatus(CarStatus status) {
+        RentalUtils.requireNotNull(status, "status");
         this.status = status;
     }
 
@@ -75,7 +73,7 @@ public class Car extends ua.common.BaseEntity {
     @Override
     public String toString() {
         return "Class: " + getClass().getSimpleName() + "\nlicensePlate: " + licensePlate + "\nmodel: " + model
-            + "\nyear: " + year + "\nmileage: " + mileage + "\nstatus: " + status + "\ncreatedAt: " + createdAt;
+            + "\nyear: " + year + "\nmileage: " + mileage + "\nstatus: " + status;
     }
 
 }
