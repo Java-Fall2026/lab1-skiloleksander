@@ -1,7 +1,13 @@
 package ua.rental;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ua.rental.exception.InvalidDataException;
 import ua.rental.model.Branch;
 import ua.rental.model.Car;
 import ua.rental.model.CarStatus;
@@ -9,161 +15,124 @@ import ua.rental.model.Customer;
 import ua.rental.model.Payment;
 import ua.rental.model.PaymentMethod;
 import ua.rental.model.Rental;
+import ua.rental.util.CarLoader;
 import ua.rental.util.RentalUtils;
 
 /**
- * Main application entry point to demonstrate the usage of the rental domain model.
- * Showcases object creation, validation, normalization, and computed properties.
+ * Main application entry point to demonstrate file loading, exception handling,
+ * mutable state validation, and multi-level SLF4J logging.
  */
 public class Main {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     /**
-     * The main method to run the demonstration.
+     * Runs the Lab 3 demonstration scenarios.
      *
      * @param args command line arguments (not used)
      */
     public static void main(String[] args) {
-        // 1. Record creation and accessing its components
-        System.out.println("=== 1. Створення record-об'єктів та звернення до їхніх компонентів ===");
+        log.info("Starting car rental application demonstration");
+
+        // 1. Reading a file containing both valid and invalid rows
+        System.out.println("=== 1. Читання файла з коректними й некоректними рядками ===");
+        Path validAndInvalidFile = Path.of("data/tests.csv");
+        System.out.println("Читання файла: " + validAndInvalidFile);
+
+        List<Car> loadedCars = CarLoader.loadCarsFromFile(validAndInvalidFile);
+        System.out.println("Успішно завантажено коректних автомобілів: " + loadedCars.size());
+        for (int i = 0; i < loadedCars.size(); i++) {
+            Car c = loadedCars.get(i);
+            System.out.println((i + 1) + ". " + c.getLicensePlate() + " — " + c.getModel()
+                + " (" + c.getYear() + " р., пробіг: " + c.getMileage() + " км, статус: " + c.getStatus() + ")");
+        }
+
+        // 2. Attempting to read a non-existent file
+        System.out.println("\n=== 2. Спроба прочитати відсутній файл ===");
+        Path missingFile = Path.of("data/non_existent_cars.csv");
+        System.out.println("Спроба відкрити відсутній файл: " + missingFile);
+
+        List<Car> carsFromMissingFile = CarLoader.loadCarsFromFile(missingFile);
+        System.out.println("Програма продовжує роботу після помилки читання файла.");
+        System.out.println("Кількість завантажених автомобілів із відсутнього файла: " + carsFromMissingFile.size());
+
+        // 3. Invalid value in a mutable class setter and its handling
+        System.out.println("\n=== 3. Некоректне значення в сеттері змінюваного класу Car і його обробка ===");
+        Car mutableCar = loadedCars.isEmpty()
+            ? Car.of("AA1234BC", "Toyota RAV4", 2021, 45000, CarStatus.AVAILABLE)
+            : loadedCars.get(0);
+
+        System.out.println("Початковий стан автомобіля:\n" + mutableCar);
+
+        System.out.println("\n--- Спроба встановити від'ємний пробіг (-150 км) через setMileage ---");
+        try {
+            mutableCar.setMileage(-150);
+        } catch (IllegalArgumentException e) {
+            log.warn("Rejected invalid mileage update for car {}: {}", mutableCar.getLicensePlate(), e.getMessage());
+            System.out.println("Перехоплено виключення у сеттері setMileage: " + e.getMessage());
+        }
+        System.out.println("Пробіг автомобіля залишився незмінним: " + mutableCar.getMileage() + " км");
+
+        System.out.println("\n--- Спроба встановити завеликий пробіг (5 000 000 км) через setMileage ---");
+        try {
+            mutableCar.setMileage(5_000_000);
+        } catch (IllegalArgumentException e) {
+            log.warn("Rejected out-of-range mileage update for car {}: {}", mutableCar.getLicensePlate(), e.getMessage());
+            System.out.println("Перехоплено виключення у сеттері setMileage: " + e.getMessage());
+        }
+        System.out.println("Пробіг автомобіля залишився незмінним: " + mutableCar.getMileage() + " км");
+
+        System.out.println("\n--- Спроба встановити порожній статус (null) через setStatus ---");
+        try {
+            mutableCar.setStatus(null);
+        } catch (IllegalArgumentException e) {
+            log.warn("Rejected null status update for car {}: {}", mutableCar.getLicensePlate(), e.getMessage());
+            System.out.println("Перехоплено виключення у сеттері setStatus: " + e.getMessage());
+        }
+        System.out.println("Статус автомобіля залишився незмінним: " + mutableCar.getStatus());
+
+        System.out.println("\n--- Коректне оновлення пробігу та статусу через сеттери ---");
+        mutableCar.setMileage(46500);
+        mutableCar.setStatus(CarStatus.RENTED);
+        log.info("Updated car {} successfully: mileage={}, status={}",
+            mutableCar.getLicensePlate(), mutableCar.getMileage(), mutableCar.getStatus());
+        System.out.println("Оновлений стан автомобіля: пробіг = " + mutableCar.getMileage()
+            + " км, статус = " + mutableCar.getStatus());
+
+        // 4. Logging at all three levels (INFO, WARN, ERROR)
+        System.out.println("\n=== 4. Логування всіх трьох рівнів (INFO, WARN, ERROR) ===");
+
+        // INFO level demonstration: normal domain operation
         Branch branch = new Branch("Kyiv-Central", "Kyiv, Vokzalna Square 1");
         Customer customer = new Customer("DL987654", "Taras", "Shevchenko", LocalDate.of(1995, 8, 24));
-
-        System.out.println("branch.name(): " + branch.name());
-        System.out.println("branch.location(): " + branch.location());
-        System.out.println("customer.driverLicense(): " + customer.driverLicense());
-        System.out.println("customer.firstName(): " + customer.firstName());
-        System.out.println("customer.lastName(): " + customer.lastName());
-        System.out.println("customer.birthDate(): " + customer.birthDate());
-
-        // Creating mutable class Car, and records Rental and Payment
-        Car car = Car.of("  aa1234bc ", "Toyota RAV4", 2021, 45000, CarStatus.AVAILABLE);
-        Rental rental = Rental.of(car, customer, branch, LocalDate.now(), LocalDate.now().plusDays(3));
+        Rental rental = Rental.of(mutableCar, customer, branch, LocalDate.now(), LocalDate.now().plusDays(3));
         Payment payment = new Payment("PAY-1001", rental, 2500.0, LocalDate.now(), PaymentMethod.CREDIT_CARD);
 
-        // 2. Enum: values() iteration, custom constant field, valueOf in try/catch
-        System.out.println("\n=== 2. Робота з enum (values, власне поле, valueOf в try/catch) ===");
-        System.out.println("--- Перебір констант PaymentMethod через values() та власне поле feePercent ---");
-        for (PaymentMethod method : PaymentMethod.values()) {
-            System.out.println(method.name() + ": ordinal=" + method.ordinal() + ", feePercent=" + method.getFeePercent() + "%");
-        }
-
-        System.out.println("\n--- Доступ до власного поля конкретної константи ---");
-        System.out.println("PaymentMethod.CREDIT_CARD.getFeePercent(): " + PaymentMethod.CREDIT_CARD.getFeePercent() + "%");
-
-        System.out.println("\n--- Неправильний рядок у valueOf (try/catch) ---");
-        String invalidMethodStr = "BITCOIN";
-        try {
-            PaymentMethod method = PaymentMethod.valueOf(invalidMethodStr);
-            System.out.println("Знайдено спосіб оплати: " + method);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка при PaymentMethod.valueOf: " + e.getMessage());
-        }
-
-        String invalidStatusStr = "BROKEN";
-        try {
-            CarStatus status = CarStatus.valueOf(invalidStatusStr);
-            System.out.println("Знайдено статус: " + status);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка при CarStatus.valueOf: " + e.getMessage());
-        }
-
-        // 3. Both switch expressions
-        System.out.println("\n=== 3. Робота switch-виразів ===");
-        System.out.println("--- Перший switch-вираз: по CarStatus без default (RentalUtils.getCarStatusAction) ---");
-        for (CarStatus status : CarStatus.values()) {
-            System.out.println(status + ": " + RentalUtils.getCarStatusAction(status));
-        }
-
-        System.out.println("\n--- Другий switch-вираз: вибір поведінки розрахунку комісії (RentalUtils.calculateFee) ---");
-        double orderAmount = 2500.0;
-        System.out.println("Сума до оплати: " + RentalUtils.formatMoney(orderAmount));
-        for (PaymentMethod method : PaymentMethod.values()) {
-            System.out.println(method + ": комісія " + RentalUtils.formatMoney(RentalUtils.calculateFee(method, orderAmount)));
-        }
-
-        // 4. Record created with invalid data -> IllegalArgumentException from compact constructor
-        System.out.println("\n=== 4. Створення record з невалідними даними (компактний конструктор) ===");
-        try {
-            new Customer("DL111111", "Young", "Driver", LocalDate.now().minusYears(16));
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка компактного конструктора Customer (вік менше 18): " + e.getMessage());
-        }
-
-        try {
-            new Branch("   ", "Kyiv, Khreshchatyk 1");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка компактного конструктора Branch (порожня назва): " + e.getMessage());
-        }
-
-        try {
-            new Payment("PAY-9999", rental, -250.0, LocalDate.now(), PaymentMethod.CASH);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка компактного конструктора Payment (недодатна сума): " + e.getMessage());
-        }
-
-        try {
-            Rental.of(car, customer, branch, LocalDate.now().plusDays(5), LocalDate.now().plusDays(2));
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка компактного конструктора Rental (дати переплутані): " + e.getMessage());
-        }
-
-        // 5. Two identical record objects: equals and hashCode
-        System.out.println("\n=== 5. Порівняння двох однакових record-об'єктів (equals та hashCode) ===");
-        Customer customer1 = new Customer("DL987654", "Taras", "Shevchenko", LocalDate.of(1995, 8, 24));
-        Customer customer2 = new Customer("DL987654", "Taras", "Shevchenko", LocalDate.of(1995, 8, 24));
-        Customer customer3 = new Customer("DL000001", "Ivan", "Franko", LocalDate.of(1990, 5, 1));
-
-        System.out.println("customer1 == customer2 (різні посилання): " + (customer1 == customer2));
-        System.out.println("customer1.equals(customer2) (згенерований equals): " + customer1.equals(customer2));
-        System.out.println("customer1.hashCode() == customer2.hashCode() (згенерований hashCode): " + (customer1.hashCode() == customer2.hashCode()));
-        System.out.println("customer1.equals(customer3) (різні об'єкти): " + customer1.equals(customer3));
-
-        Branch branch1 = new Branch("Kyiv-Central", "Kyiv, Vokzalna Square 1");
-        Branch branch2 = new Branch("Kyiv-Central", "Kyiv, Vokzalna Square 1");
-        System.out.println("branch1.equals(branch2): " + branch1.equals(branch2));
-        System.out.println("branch1.hashCode() == branch2.hashCode(): " + (branch1.hashCode() == branch2.hashCode()));
-
-        // 6. Record printing via generated toString()
-        System.out.println("\n=== 6. Вивід record через згенерований toString() ===");
-        System.out.println("--- Branch ---");
-        System.out.println(branch);
-
-        System.out.println("\n--- Customer ---");
-        System.out.println(customer);
-
-        System.out.println("\n--- Rental ---");
-        System.out.println(rental);
-
-        System.out.println("\n--- Payment ---");
-        System.out.println(payment);
-
-        System.out.println("\n--- Car (клас із власним toString) ---");
-        System.out.println(car);
-
-        // Additional: mutable class Car setter and computed methods
-        System.out.println("\n=== Спроба зіпсувати коректний об'єкт сеттером ===");
-        try {
-            car.setMileage(-150);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Помилка при виклику setMileage з від'ємним значенням: " + e.getMessage());
-        }
-
-        System.out.println("\n=== Виклик обчислюваних методів ===");
         int rentalDays = RentalUtils.rentalDays(rental);
-        System.out.println("Кількість днів оренди (RentalUtils.rentalDays): " + rentalDays);
+        int carAge = RentalUtils.carAgeYears(mutableCar);
+        double fee = RentalUtils.calculateFee(payment.paymentMethod(), payment.amount());
 
-        int carAge = RentalUtils.carAgeYears(car);
-        System.out.println("Вік автомобіля в роках (RentalUtils.carAgeYears): " + carAge);
+        log.info("Created rental for customer {} {} on car {} for {} days (car age: {} years, fee: {})",
+            customer.firstName(), customer.lastName(), mutableCar.getLicensePlate(),
+            rentalDays, carAge, RentalUtils.formatMoney(fee));
+        System.out.println("[INFO] Створено оренду на " + rentalDays + " дн., вік авто: " + carAge
+            + " р., комісія за оплату: " + RentalUtils.formatMoney(fee));
 
-        // The following lines are commented out because they would cause compilation errors:
+        // WARN level demonstration: recoverable bad input row handled by caller
+        String badCsvLine = "KA1111AA,Nissan Qashqai,2020,forty-thousand,AVAILABLE";
+        try {
+            CarLoader.parseCarFromLine(badCsvLine, 3);
+        } catch (InvalidDataException e) {
+            log.warn("Handled checked InvalidDataException while parsing single row: {}", e.getMessage(), e);
+            System.out.println("[WARN] Перехоплено checked InvalidDataException: " + e.getMessage()
+                + " (причина: " + e.getCause().getClass().getSimpleName() + ")");
+        }
 
-        // 1. Accessing a package-private class from outside its package
-        // ua.rental.util.ValidationHelper.requireNotNull(null, "Test");
-        // Compilation error: ua.rental.util.ValidationHelper is not public in ua.rental.util; cannot be accessed from outside package
+        // ERROR level demonstration: failed operation when trying to load from a missing backup path
+        Path missingBackupPath = Path.of("data/backup_cars.csv");
+        log.error("Backup file {} does not exist; proceeding before triggering loader error demonstration", missingBackupPath);
+        CarLoader.loadCarsFromFile(missingBackupPath);
+        System.out.println("[ERROR] Зафіксовано помилку доступу до відсутнього резервного файла: " + missingBackupPath);
 
-        // 2. Accessing a private constructor
-        // Car invalidCar = new Car("CX123", "Model X", 2021, 1000, CarStatus.AVAILABLE);
-        // Compilation error: Car(String, String, int, int, CarStatus) has private access in ua.rental.model.Car.
-        // We must use the static factory method Car.of(...) instead.
+        log.info("Car rental application demonstration finished");
     }
 }

@@ -17,7 +17,7 @@ public class Car {
         RentalUtils.requireNotEmpty(model, "model");
         RentalUtils.requireInRange(year, 1900, java.time.Year.now().getValue(), "year");
         this.licensePlate = RentalUtils.normalize(licensePlate);
-        this.model = model;
+        this.model = model.trim();
         this.year = year;
         setMileage(mileage);
         setStatus(status);
