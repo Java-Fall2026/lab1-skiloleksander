@@ -19,7 +19,7 @@ public class RentalUtils {
         ValidationHelper.requireNotEmpty(str, fieldName);
     }
 
-    public static void requirePositive (int number, String fieldName) {
+    public static void requirePositive(int number, String fieldName) {
         ValidationHelper.requirePositive(number, fieldName);
     }
 
