@@ -25,7 +25,7 @@ public class CarLoader {
             RentalUtils.requireNotEmpty(line, "CSV line");
             String[] parts = line.split(",", -1);
 
-            if (parts.length > 5) {
+            if (parts.length != 5) {
                 throw new IllegalArgumentException(
                     "Expected format licensePlate,model,year,mileage,status, got: " + line
                 );
